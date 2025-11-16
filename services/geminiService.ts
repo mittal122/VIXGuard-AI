@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { StrategyResult } from '../types';
 
@@ -93,9 +92,10 @@ const responseSchema = {
 };
 
 
+// FIX: Switched from `import.meta.env.VITE_API_KEY` to `process.env.API_KEY` to align with Gemini API guidelines and resolve TypeScript errors.
 export const calculateStrategy = async (vixPercent: number, niftyPrice: number): Promise<StrategyResult> => {
   if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set. Please configure it in your Vercel deployment settings.");
+    throw new Error("API_KEY environment variable not set. Please configure it.");
   }
 
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
@@ -123,7 +123,8 @@ export const calculateStrategy = async (vixPercent: number, niftyPrice: number):
     console.error("Error calling Gemini API:", error);
     if (error instanceof Error) {
         if (error.message.includes('API key not valid')) {
-            throw new Error("The configured API key is invalid. Please check your Vercel environment variables.");
+            // FIX: Updated error message to reference `API_KEY` instead of `VITE_API_KEY`.
+            throw new Error("The configured API_KEY is invalid. Please check your environment variables.");
         }
         if (error.message.includes('SAFETY')) {
             throw new Error("The request was blocked due to safety settings. Please adjust your input.");
