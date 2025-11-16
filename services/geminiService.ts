@@ -91,13 +91,9 @@ const responseSchema = {
     required: ["vix_percent", "vix_timestamp", "vix_source", "nifty_price", "nifty_timestamp", "nifty_source", "candle_data_source", "expected_move_percent", "expected_move_percent_sqrt", "expected_move_points", "expected_move_points_sqrt", "resistance", "support", "resistance_sqrt", "support_sqrt", "trade_recommendation", "staleness_warning", "check_timestamp", "notes"],
 };
 
-
-// FIX: Switched from `import.meta.env.VITE_API_KEY` to `process.env.API_KEY` to align with Gemini API guidelines and resolve TypeScript errors.
 export const calculateStrategy = async (vixPercent: number, niftyPrice: number): Promise<StrategyResult> => {
-  if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set. Please configure it.");
-  }
-
+  // Fix: Use `process.env.API_KEY` to initialize GoogleGenAI client as per guidelines.
+  // This resolves the `import.meta.env` error and aligns with standard practice for handling environment variables.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = buildPrompt(vixPercent, niftyPrice);
 
@@ -122,8 +118,8 @@ export const calculateStrategy = async (vixPercent: number, niftyPrice: number):
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     if (error instanceof Error) {
+        // Fix: Update error message to refer to the correct environment variable `API_KEY`.
         if (error.message.includes('API key not valid')) {
-            // FIX: Updated error message to reference `API_KEY` instead of `VITE_API_KEY`.
             throw new Error("The configured API_KEY is invalid. Please check your environment variables.");
         }
         if (error.message.includes('SAFETY')) {
