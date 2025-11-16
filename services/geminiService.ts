@@ -2,12 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { StrategyResult } from '../types';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const buildPrompt = (vixPercent: number, niftyPrice: number): string => `
 You are a sophisticated financial analyst bot specializing in the "India VIX Based Intraday Range for NIFTY" trading strategy.
 
@@ -100,7 +94,13 @@ const responseSchema = {
 
 
 export const calculateStrategy = async (vixPercent: number, niftyPrice: number): Promise<StrategyResult> => {
+  if (!process.env.API_KEY) {
+    throw new Error("API_KEY environment variable not set. Please configure it in your Vercel deployment settings.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = buildPrompt(vixPercent, niftyPrice);
+
   try {
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -112,13 +112,22 @@ export const calculateStrategy = async (vixPercent: number, niftyPrice: number):
     });
 
     const jsonText = response.text.trim();
+    if (!jsonText) {
+        throw new Error("Received an empty response from the AI.");
+    }
+    
     const parsedJson = JSON.parse(jsonText);
     return parsedJson as StrategyResult;
 
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    if (error instanceof Error && error.message.includes('SAFETY')) {
-        throw new Error("The request was blocked due to safety settings. Please adjust your input.");
+    if (error instanceof Error) {
+        if (error.message.includes('API key not valid')) {
+            throw new Error("The configured API key is invalid. Please check your Vercel environment variables.");
+        }
+        if (error.message.includes('SAFETY')) {
+            throw new Error("The request was blocked due to safety settings. Please adjust your input.");
+        }
     }
     throw new Error("Failed to get strategy from AI. The model may be overloaded or the input is invalid.");
   }
