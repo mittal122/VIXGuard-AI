@@ -1,0 +1,5 @@
+{
+  "name": "Nifty VIX Strategy Calculator",
+  "description": "An interactive tool to calculate intraday trading ranges for the NIFTY 50 index based on the India VIX. It provides trade recommendations, including entry, stop-loss, and targets, using AI-powered calculations.",
+  "requestFramePermissions": []
+}
