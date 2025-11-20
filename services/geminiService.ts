@@ -92,8 +92,6 @@ const responseSchema = {
 };
 
 export const calculateStrategy = async (vixPercent: number, niftyPrice: number): Promise<StrategyResult> => {
-  // Fix: Use `process.env.API_KEY` to initialize GoogleGenAI client as per guidelines.
-  // This resolves the `import.meta.env` error and aligns with standard practice for handling environment variables.
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
   const prompt = buildPrompt(vixPercent, niftyPrice);
 
@@ -118,7 +116,6 @@ export const calculateStrategy = async (vixPercent: number, niftyPrice: number):
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     if (error instanceof Error) {
-        // Fix: Update error message to refer to the correct environment variable `API_KEY`.
         if (error.message.includes('API key not valid')) {
             throw new Error("The configured API_KEY is invalid. Please check your environment variables.");
         }
@@ -129,3 +126,45 @@ export const calculateStrategy = async (vixPercent: number, niftyPrice: number):
     throw new Error("Failed to get strategy from AI. The model may be overloaded or the input is invalid.");
   }
 };
+
+export const fetchLiveMarketData = async (): Promise<{ vix: number, nifty: number }> => {
+    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const prompt = `
+      Search for the current live market price of the "NIFTY 50" index and the "India VIX".
+      
+      Return ONLY a valid JSON object with exactly two keys: "nifty" and "vix".
+      The values must be numbers.
+      Example: {"nifty": 24350.50, "vix": 13.45}
+      
+      Do not include Markdown formatting (like \`\`\`json). Just the raw JSON string.
+    `;
+  
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+        config: {
+            tools: [{ googleSearch: {} }],
+        }
+      });
+  
+      const text = response.text || "";
+      // Clean up any potential markdown code blocks if the model ignores the instruction
+      const cleanText = text.replace(/```json|```/g, '').trim();
+      
+      // Attempt to find JSON structure in the text if it's mixed with other text
+      const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : cleanText;
+
+      const data = JSON.parse(jsonString);
+      
+      if (typeof data.nifty === 'number' && typeof data.vix === 'number') {
+          return { nifty: data.nifty, vix: data.vix };
+      } else {
+          throw new Error("Invalid data format received from live feed.");
+      }
+    } catch (error) {
+      console.error("Error fetching live market data:", error);
+      throw new Error("Failed to fetch live market data. Please try again manually.");
+    }
+  };

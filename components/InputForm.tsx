@@ -1,36 +1,30 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 
 interface InputFormProps {
-  onCalculate: (vixPercent: number, niftyPrice: number) => void;
+  vix: string;
+  nifty: string;
+  onVixChange: (value: string) => void;
+  onNiftyChange: (value: string) => void;
+  onCalculate: () => void;
   isLoading: boolean;
   isLive: boolean;
-  onToggleLive: (vixPercent: number, niftyPrice: number) => void;
+  onToggleLive: () => void;
 }
 
-export const InputForm: React.FC<InputFormProps> = ({ onCalculate, isLoading, isLive, onToggleLive }) => {
-  const [vix, setVix] = useState<string>('15.5');
-  const [nifty, setNifty] = useState<string>('23500');
+export const InputForm: React.FC<InputFormProps> = ({ 
+    vix, 
+    nifty, 
+    onVixChange, 
+    onNiftyChange, 
+    onCalculate, 
+    isLoading, 
+    isLive, 
+    onToggleLive 
+}) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const vixPercent = parseFloat(vix);
-    const niftyPrice = parseFloat(nifty);
-    if (!isNaN(vixPercent) && !isNaN(niftyPrice) && vixPercent > 0 && niftyPrice > 0) {
-      onCalculate(vixPercent, niftyPrice);
-    } else {
-      alert("Please enter valid positive numbers for VIX and Nifty.");
-    }
-  };
-
-  const handleToggleClick = () => {
-    const vixPercent = parseFloat(vix);
-    const niftyPrice = parseFloat(nifty);
-    if (!isNaN(vixPercent) && !isNaN(niftyPrice) && vixPercent > 0 && niftyPrice > 0) {
-        onToggleLive(vixPercent, niftyPrice);
-    } else {
-        alert("Please enter valid positive numbers for VIX and Nifty to start the live feed.");
-    }
+    onCalculate();
   };
 
   return (
@@ -43,7 +37,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onCalculate, isLoading, is
           type="number"
           id="vix"
           value={vix}
-          onChange={(e) => setVix(e.target.value)}
+          onChange={(e) => onVixChange(e.target.value)}
           placeholder="e.g., 15.5"
           step="0.01"
           required
@@ -59,7 +53,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onCalculate, isLoading, is
           type="number"
           id="nifty"
           value={nifty}
-          onChange={(e) => setNifty(e.target.value)}
+          onChange={(e) => onNiftyChange(e.target.value)}
           placeholder="e.g., 23500"
           step="0.01"
           required
@@ -86,9 +80,10 @@ export const InputForm: React.FC<InputFormProps> = ({ onCalculate, isLoading, is
       </button>
        <button
         type="button"
-        onClick={handleToggleClick}
-        disabled={isLoading && !isLive}
-        className={`w-full text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center h-[42px] ${isLive ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
+        onClick={onToggleLive}
+        // Allow stopping even if loading
+        disabled={false}
+        className={`w-full text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out flex items-center justify-center h-[42px] ${isLive ? 'bg-red-600 hover:bg-red-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
       >
         {isLoading && isLive ? (
            <>
@@ -96,7 +91,7 @@ export const InputForm: React.FC<InputFormProps> = ({ onCalculate, isLoading, is
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            Updating...
+            Fetching...
           </>
         ) : isLive ? (
           'Stop Live Data'

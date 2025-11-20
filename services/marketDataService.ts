@@ -1,64 +1,54 @@
+import { fetchLiveMarketData } from './geminiService';
 
 let intervalId: number | undefined;
-let baseline = { vix: 15.5, nifty: 23500 };
-
-/**
- * Generates a slightly randomized next value for VIX and Nifty.
- * This simulates live market data fluctuations.
- */
-const generateNewData = () => {
-  const niftyChange = (Math.random() - 0.5) * 20; // Fluctuates by +/- 10 points
-  const vixChange = (Math.random() - 0.49) * 0.2; // Fluctuates by +/- ~0.1
-
-  // Update baseline nifty price
-  baseline.nifty = Math.round((baseline.nifty + niftyChange) * 100) / 100;
-
-  // Update baseline VIX, ensuring it stays within a reasonable range (e.g., > 10)
-  baseline.vix = Math.round(Math.max(10, baseline.vix + vixChange) * 100) / 100;
-
-  return { ...baseline };
-};
 
 export const marketDataService = {
   /**
-   * Starts the simulated data stream.
-   * @param initialVix The starting VIX value.
-   * @param initialNifty The starting Nifty value.
-   * @param callback The function to call with new data on each interval.
-   * @param intervalMs The interval in milliseconds (defaults to 5000ms).
+   * Starts the live data stream using Gemini Search Grounding.
+   * Fetches data every 60 seconds to respect API quotas while providing "live" updates.
    */
-  start: (
-    initialVix: number,
-    initialNifty: number,
+  start: async (
     callback: (data: { vix: number; nifty: number }) => void,
-    intervalMs = 5000
+    onError: (error: string) => void,
+    intervalMs = 60000 
   ) => {
-    // Clear any existing interval to prevent duplicates
+    // Clear any existing interval
     if (intervalId) {
       clearInterval(intervalId);
     }
 
-    baseline = { vix: initialVix, nifty: initialNifty };
-    
-    // Immediately provide the first data point upon starting
-    callback(baseline);
+    // Initial Fetch
+    try {
+       const data = await fetchLiveMarketData();
+       callback(data);
+    } catch (err) {
+       onError(err instanceof Error ? err.message : 'Failed to fetch initial live data');
+    }
 
-    intervalId = window.setInterval(() => {
-      const newData = generateNewData();
-      callback(newData);
+    // Periodic Fetch
+    intervalId = window.setInterval(async () => {
+      try {
+        const data = await fetchLiveMarketData();
+        callback(data);
+      } catch (err) {
+        console.error("Live feed update failed:", err);
+        // We don't stop the feed on single failure, just log it, 
+        // unless we want to notify the user via the onError callback
+        onError(err instanceof Error ? err.message : 'Live feed update failed');
+      }
     }, intervalMs);
 
-    console.log('Started simulated market data stream.');
+    console.log('Started live market data stream (Real-time via Google Search).');
   },
 
   /**
-   * Stops the simulated data stream.
+   * Stops the data stream.
    */
   stop: () => {
     if (intervalId) {
       clearInterval(intervalId);
       intervalId = undefined;
-      console.log('Stopped simulated market data stream.');
+      console.log('Stopped live market data stream.');
     }
   },
 };
