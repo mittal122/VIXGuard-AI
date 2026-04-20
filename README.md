@@ -63,7 +63,7 @@ mindmap
       Expected move by VIX/sqrt(30)
       Support and resistance levels
       Simulated LONG/SHORT/NO_TRADE
-      Entry stop-loss target_1 target_2
+      Entry, stop-loss, target_1, target_2
       Risk points and risk percent
     UI
       Trade recommendation card
